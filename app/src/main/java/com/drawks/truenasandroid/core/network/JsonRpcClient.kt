@@ -159,14 +159,12 @@ internal fun JsonRpcResponse.isSuccessfulAuthResponse(): Boolean {
 }
 
 internal fun JsonRpcResponse.authFailureMessage(): String? {
-    error?.message?.let { return it }
+    error?.message?.takeUnless { it.isBlank() }?.let { return it }
     val nestedResponseType = ((result as? JsonObject)?.get("response_type") as? JsonPrimitive)?.contentOrNull
         ?: responseType
     return nestedResponseType?.takeUnless { it == AUTH_SUCCESS_RESPONSE }?.let {
         "TrueNAS authentication failed: $it"
-    } ?: msg?.let {
-        "TrueNAS authentication failed: $it"
-    }
+    } ?: "TrueNAS authentication failed"
 }
 
 private const val AUTH_SUCCESS_RESPONSE = "SUCCESS"
