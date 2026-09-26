@@ -6,7 +6,6 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
@@ -151,16 +150,11 @@ class OkHttpJsonRpcClient @Inject constructor(
 }
 
 internal fun JsonRpcResponse.isSuccessfulAuthResponse(): Boolean {
-    if (msg != null && msg != RESULT_MESSAGE) return false
+    if (msg != RESULT_MESSAGE) return false
 
-    return when (val authResult = result) {
-        is JsonObject -> {
-            val responseType = (authResult["response_type"] as? JsonPrimitive)?.contentOrNull
-            responseType == AUTH_SUCCESS_RESPONSE
-        }
-        is JsonPrimitive -> authResult.booleanOrNull == true || authResult.contentOrNull == AUTH_SUCCESS_RESPONSE
-        else -> false
-    }
+    val authResult = result as? JsonObject ?: return false
+    val responseType = (authResult["response_type"] as? JsonPrimitive)?.contentOrNull
+    return responseType == AUTH_SUCCESS_RESPONSE
 }
 
 internal fun JsonRpcResponse.authFailureMessage(): String? {

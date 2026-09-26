@@ -96,9 +96,8 @@ class JsonRpcClientUtilsTest {
             msg = "result",
             result = JsonObject(mapOf("response_type" to JsonPrimitive("SUCCESS"))),
         )
-        val legacySuccess = JsonRpcResponse(
-            msg = "result",
-            result = JsonPrimitive(true),
+        val missingEnvelope = JsonRpcResponse(
+            result = JsonObject(mapOf("response_type" to JsonPrimitive("SUCCESS"))),
         )
         val missingResponseType = JsonRpcResponse(
             msg = "result",
@@ -114,7 +113,7 @@ class JsonRpcClientUtilsTest {
         )
 
         assertThat(success.isSuccessfulAuthResponse()).isTrue()
-        assertThat(legacySuccess.isSuccessfulAuthResponse()).isTrue()
+        assertThat(missingEnvelope.isSuccessfulAuthResponse()).isFalse()
         assertThat(missingResponseType.isSuccessfulAuthResponse()).isFalse()
         assertThat(authError.isSuccessfulAuthResponse()).isFalse()
         assertThat(authError.authFailureMessage()).isEqualTo("TrueNAS authentication failed: AUTH_ERR")
