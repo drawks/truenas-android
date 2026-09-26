@@ -6,6 +6,7 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
@@ -103,16 +104,9 @@ class OkHttpJsonRpcClient @Inject constructor(
                                 socket.close(1000, null)
                                 return
                             }
-                            val responseType = ((parsed.result as? JsonObject)?.get("response_type") as? JsonPrimitive)?.contentOrNull
-                            if (responseType != AUTH_SUCCESS_RESPONSE) {
+                            if (!parsed.isSuccessfulAuthResponse()) {
                                 continuation.resumeWithException(
-                                    IllegalStateException(
-                                        if (responseType.isNullOrBlank()) {
-                                            "TrueNAS authentication failed"
-                                        } else {
-                                            "TrueNAS authentication failed: $responseType"
-                                        }
-                                    )
+                                    IllegalStateException(parsed.authFailureMessage() ?: "TrueNAS authentication failed")
                                 )
                                 socket.close(1000, null)
                                 return
@@ -154,6 +148,27 @@ class OkHttpJsonRpcClient @Inject constructor(
         const val AUTH_METHOD = "auth.login_ex"
         const val AUTH_MECHANISM = "API_KEY_PLAIN"
         const val AUTH_SUCCESS_RESPONSE = "SUCCESS"
+        const val RESULT_MESSAGE = "result"
+    }
+
+    private fun JsonRpcResponse.isSuccessfulAuthResponse(): Boolean {
+        if (msg != null && msg != RESULT_MESSAGE) return false
+
+        return when (val authResult = result) {
+            is JsonObject -> {
+                val responseType = (authResult["response_type"] as? JsonPrimitive)?.contentOrNull
+                responseType == null || responseType == AUTH_SUCCESS_RESPONSE
+            }
+            is JsonPrimitive -> authResult.booleanOrNull == true || authResult.contentOrNull == AUTH_SUCCESS_RESPONSE
+            else -> result != null
+        }
+    }
+
+    private fun JsonRpcResponse.authFailureMessage(): String? {
+        val responseType = ((result as? JsonObject)?.get("response_type") as? JsonPrimitive)?.contentOrNull
+        return responseType?.takeUnless { it == AUTH_SUCCESS_RESPONSE }?.let {
+            "TrueNAS authentication failed: $it"
+        }
     }
 }
 

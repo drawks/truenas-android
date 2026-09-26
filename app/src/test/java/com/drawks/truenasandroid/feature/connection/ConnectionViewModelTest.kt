@@ -3,7 +3,9 @@ package com.drawks.truenasandroid.feature.connection
 import com.drawks.truenasandroid.core.model.ConnectionProfile
 import com.drawks.truenasandroid.core.model.ConnectionStatus
 import com.drawks.truenasandroid.core.model.InstanceInfo
+import com.drawks.truenasandroid.core.network.JsonRpcClient
 import com.drawks.truenasandroid.core.storage.ConnectionProfileStore
+import com.drawks.truenasandroid.feature.dashboard.TrueNasRepositoryImpl
 import com.drawks.truenasandroid.feature.dashboard.TrueNasRepository
 import com.google.common.truth.Truth.assertThat
 import java.util.concurrent.atomic.AtomicReference
@@ -15,6 +17,7 @@ import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
+import kotlinx.serialization.json.JsonElement
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
@@ -121,6 +124,33 @@ class ConnectionViewModelTest {
 
         assertThat(viewModel.uiState.value.status)
             .isEqualTo(ConnectionStatus.Success(InstanceInfo("second", "new", "READY")))
+    }
+
+    @Test
+    fun connect_withBlankUsernameSurfacesValidationError() = runTest {
+        val store = ConnectionProfileStoreFake()
+        val repository = TrueNasRepositoryImpl(
+            object : JsonRpcClient {
+                override suspend fun call(
+                    profileUrl: String,
+                    method: String,
+                    username: String,
+                    apiKey: String,
+                    params: List<JsonElement>,
+                ): JsonElement = error("Network call should not be reached for invalid profiles")
+            }
+        )
+
+        val viewModel = ConnectionViewModel(store, repository)
+        viewModel.onHostChanged("nas.local")
+        viewModel.onPortChanged("443")
+        viewModel.onApiTokenChanged("token")
+
+        viewModel.connect()
+        dispatcher.scheduler.advanceUntilIdle()
+
+        assertThat(viewModel.uiState.value.status)
+            .isEqualTo(ConnectionStatus.Error("Username is required"))
     }
 }
 
