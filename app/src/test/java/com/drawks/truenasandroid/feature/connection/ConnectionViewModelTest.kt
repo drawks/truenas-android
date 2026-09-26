@@ -52,6 +52,7 @@ class ConnectionViewModelTest {
         val viewModel = ConnectionViewModel(store, repository)
         viewModel.onHostChanged("nas.local")
         viewModel.onPortChanged("443")
+        viewModel.onUsernameChanged("admin")
         viewModel.onApiTokenChanged("token")
 
         viewModel.connect()
@@ -60,6 +61,7 @@ class ConnectionViewModelTest {
         assertThat(viewModel.uiState.value.status)
             .isEqualTo(ConnectionStatus.Success(InstanceInfo("nas.local", "24.10", "READY")))
         assertThat(lastSaved.get()?.host).isEqualTo("nas.local")
+        assertThat(lastSaved.get()?.username).isEqualTo("admin")
     }
 
     @Test
@@ -81,6 +83,7 @@ class ConnectionViewModelTest {
         val viewModel = ConnectionViewModel(store, repository)
         viewModel.onHostChanged("nas.local")
         viewModel.onPortChanged("abc")
+        viewModel.onUsernameChanged("admin")
         viewModel.onApiTokenChanged("token")
         viewModel.connect()
         dispatcher.scheduler.advanceUntilIdle()
@@ -106,6 +109,7 @@ class ConnectionViewModelTest {
 
         val viewModel = ConnectionViewModel(store, repository)
         viewModel.onApiTokenChanged("token")
+        viewModel.onUsernameChanged("admin")
         viewModel.onHostChanged("first")
         viewModel.connect()
 

@@ -9,7 +9,7 @@ data class JsonRpcRequest(
     val id: String,
     val method: String,
     val params: List<JsonElement> = emptyList(),
-    val jsonrpc: String = "2.0",
+    val msg: String = "method",
 )
 
 @Serializable
@@ -20,6 +20,7 @@ data class JsonRpcError(
 
 @Serializable
 data class JsonRpcResponse(
+    val msg: String? = null,
     val id: String? = null,
     val result: JsonElement? = null,
     val error: JsonRpcError? = null,

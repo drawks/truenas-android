@@ -2,6 +2,7 @@ package com.drawks.truenasandroid.feature.dashboard
 
 import com.drawks.truenasandroid.core.model.ConnectionProfile
 import com.drawks.truenasandroid.core.model.ConnectionStatus
+import com.drawks.truenasandroid.core.model.InstanceInfo
 import com.drawks.truenasandroid.core.network.JsonRpcClient
 import com.drawks.truenasandroid.core.network.JsonRpcException
 import com.drawks.truenasandroid.core.network.buildTrueNasSocketUrl
@@ -36,13 +37,18 @@ class TrueNasRepositoryImpl @Inject constructor(
             return@flow
         }
 
-        val url = buildTrueNasSocketUrl(profile.host, profile.port, profile.useTls)
+        val url = runCatching {
+            buildTrueNasSocketUrl(profile.host, profile.port, profile.useTls)
+        }.getOrElse { throwable ->
+            emit(ConnectionStatus.Error(throwable.message ?: "Unknown connection error"))
+            return@flow
+        }
 
         val response = runCatching {
-            jsonRpcClient.call(url, SYSTEM_INFO_PRIMARY_METHOD, profile.apiToken)
+            jsonRpcClient.call(url, SYSTEM_INFO_PRIMARY_METHOD, profile.username, profile.apiToken)
         }.recoverCatching { primaryFailure ->
             if (primaryFailure is JsonRpcException && primaryFailure.code == METHOD_NOT_FOUND_CODE) {
-                jsonRpcClient.call(url, SYSTEM_INFO_FALLBACK_METHOD, profile.apiToken)
+                jsonRpcClient.call(url, SYSTEM_INFO_FALLBACK_METHOD, profile.username, profile.apiToken)
             } else {
                 throw primaryFailure
             }
@@ -56,6 +62,7 @@ class TrueNasRepositoryImpl @Inject constructor(
 
     private fun validate(profile: ConnectionProfile) {
         require(profile.host.isNotBlank()) { "Host is required" }
+        require(profile.username.isNotBlank()) { "Username is required" }
         require(profile.apiToken.isNotBlank()) { "API token is required" }
         require(profile.port in 1..65535) { "Port must be between 1 and 65535" }
     }

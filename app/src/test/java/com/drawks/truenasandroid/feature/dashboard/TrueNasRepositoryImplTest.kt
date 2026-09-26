@@ -68,6 +68,21 @@ class TrueNasRepositoryImplTest {
     }
 
     @Test
+    fun connect_returnsErrorForMalformedHostInput() = runTest {
+        val client = FakeJsonRpcClient()
+
+        val emissions = TrueNasRepositoryImpl(client)
+            .connect(validProfile().copy(host = "https://"))
+            .toList()
+
+        assertThat(client.calls).isEmpty()
+        assertThat(emissions).containsExactly(
+            ConnectionStatus.Loading,
+            ConnectionStatus.Error("Host must be a hostname or IP address"),
+        ).inOrder()
+    }
+
+    @Test
     fun connect_mockModeSkipsNetworkAndSucceeds() = runTest {
         val client = FakeJsonRpcClient()
 
@@ -84,7 +99,7 @@ class TrueNasRepositoryImplTest {
             )
     }
 
-    private fun validProfile() = ConnectionProfile(host = "nas.local", apiToken = "token")
+    private fun validProfile() = ConnectionProfile(host = "nas.local", username = "admin", apiToken = "token")
 
     private fun jsonInfo(hostname: String, version: String, state: String) = JsonObject(
         mapOf(
@@ -104,7 +119,8 @@ class TrueNasRepositoryImplTest {
         override suspend fun call(
             profileUrl: String,
             method: String,
-            token: String,
+            username: String,
+            apiKey: String,
             params: List<JsonElement>,
         ): JsonElement {
             calls += method

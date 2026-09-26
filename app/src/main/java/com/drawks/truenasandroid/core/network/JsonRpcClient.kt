@@ -6,8 +6,9 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withTimeout
 import okhttp3.OkHttpClient
@@ -22,7 +23,13 @@ import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
 interface JsonRpcClient {
-    suspend fun call(profileUrl: String, method: String, token: String, params: List<JsonElement> = emptyList()): JsonElement
+    suspend fun call(
+        profileUrl: String,
+        method: String,
+        username: String,
+        apiKey: String,
+        params: List<JsonElement> = emptyList(),
+    ): JsonElement
 }
 
 class JsonRpcException(
@@ -35,14 +42,33 @@ class OkHttpJsonRpcClient @Inject constructor(
     private val json: Json,
 ) : JsonRpcClient {
 
-    override suspend fun call(profileUrl: String, method: String, token: String, params: List<JsonElement>): JsonElement {
+    override suspend fun call(
+        profileUrl: String,
+        method: String,
+        username: String,
+        apiKey: String,
+        params: List<JsonElement>,
+    ): JsonElement {
         val requestId = UUID.randomUUID().toString()
         val authRequestId = UUID.randomUUID().toString()
         val authRequestBody = json.encodeToString(
             JsonRpcRequest(
                 id = authRequestId,
                 method = AUTH_METHOD,
-                params = listOf(JsonPrimitive(token)),
+                params = listOf(
+                    buildJsonObject {
+                        put("mechanism", AUTH_MECHANISM)
+                        put("username", username)
+                        put("api_key", apiKey)
+                        put(
+                            "login_options",
+                            buildJsonObject {
+                                put("user_info", false)
+                                put("reconnect_token", false)
+                            }
+                        )
+                    }
+                ),
             )
         )
         val requestBody = json.encodeToString(JsonRpcRequest(id = requestId, method = method, params = params))
@@ -77,10 +103,16 @@ class OkHttpJsonRpcClient @Inject constructor(
                                 socket.close(1000, null)
                                 return
                             }
-                            val authenticated = (parsed.result as? JsonPrimitive)?.booleanOrNull == true
-                            if (!authenticated) {
+                            val responseType = ((parsed.result as? JsonObject)?.get("response_type") as? JsonPrimitive)?.contentOrNull
+                            if (responseType != AUTH_SUCCESS_RESPONSE) {
                                 continuation.resumeWithException(
-                                    IllegalStateException("TrueNAS authentication failed")
+                                    IllegalStateException(
+                                        if (responseType.isNullOrBlank()) {
+                                            "TrueNAS authentication failed"
+                                        } else {
+                                            "TrueNAS authentication failed: $responseType"
+                                        }
+                                    )
                                 )
                                 socket.close(1000, null)
                                 return
@@ -119,7 +151,9 @@ class OkHttpJsonRpcClient @Inject constructor(
     }
 
     private companion object {
-        const val AUTH_METHOD = "auth.login_with_api_key"
+        const val AUTH_METHOD = "auth.login_ex"
+        const val AUTH_MECHANISM = "API_KEY_PLAIN"
+        const val AUTH_SUCCESS_RESPONSE = "SUCCESS"
     }
 }
 

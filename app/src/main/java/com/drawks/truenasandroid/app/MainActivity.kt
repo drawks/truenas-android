@@ -53,6 +53,7 @@ class MainActivity : ComponentActivity() {
                 ConnectionScreen(
                     uiState = uiState,
                     onHostChanged = viewModel::onHostChanged,
+                    onUsernameChanged = viewModel::onUsernameChanged,
                     onPortChanged = viewModel::onPortChanged,
                     onTokenChanged = viewModel::onApiTokenChanged,
                     onTlsChanged = viewModel::onTlsChanged,
@@ -68,6 +69,7 @@ class MainActivity : ComponentActivity() {
 fun ConnectionScreen(
     uiState: ConnectionUiState,
     onHostChanged: (String) -> Unit,
+    onUsernameChanged: (String) -> Unit,
     onPortChanged: (String) -> Unit,
     onTokenChanged: (String) -> Unit,
     onTlsChanged: (Boolean) -> Unit,
@@ -107,9 +109,17 @@ fun ConnectionScreen(
             )
 
             OutlinedTextField(
+                value = uiState.profile.username,
+                onValueChange = onUsernameChanged,
+                label = { Text("Username") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+            )
+
+            OutlinedTextField(
                 value = uiState.profile.apiToken,
                 onValueChange = onTokenChanged,
-                label = { Text("API token") },
+                label = { Text("API key") },
                 singleLine = true,
                 visualTransformation = PasswordVisualTransformation(),
                 modifier = Modifier.fillMaxWidth(),
@@ -186,6 +196,7 @@ private fun ConnectionScreenPreview() {
                 )
             ),
             onHostChanged = {},
+            onUsernameChanged = {},
             onPortChanged = {},
             onTokenChanged = {},
             onTlsChanged = {},

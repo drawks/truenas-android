@@ -34,6 +34,7 @@ class EncryptedConnectionProfileStore @Inject constructor(
         ConnectionProfile(
             host = sharedPreferences.getString(KEY_HOST, "") ?: "",
             port = sharedPreferences.getInt(KEY_PORT, 443),
+            username = sharedPreferences.getString(KEY_USERNAME, "") ?: "",
             apiToken = sharedPreferences.getString(KEY_TOKEN, "") ?: "",
             useTls = sharedPreferences.getBoolean(KEY_USE_TLS, true),
             mockMode = sharedPreferences.getBoolean(KEY_MOCK_MODE, false),
@@ -44,6 +45,7 @@ class EncryptedConnectionProfileStore @Inject constructor(
         val committed = sharedPreferences.edit()
             .putString(KEY_HOST, profile.host.trim())
             .putInt(KEY_PORT, profile.port)
+            .putString(KEY_USERNAME, profile.username.trim())
             .putString(KEY_TOKEN, profile.apiToken.trim())
             .putBoolean(KEY_USE_TLS, profile.useTls)
             .putBoolean(KEY_MOCK_MODE, profile.mockMode)
@@ -55,6 +57,7 @@ class EncryptedConnectionProfileStore @Inject constructor(
         const val FILE_NAME = "connection_profile"
         const val KEY_HOST = "host"
         const val KEY_PORT = "port"
+        const val KEY_USERNAME = "username"
         const val KEY_TOKEN = "token"
         const val KEY_USE_TLS = "use_tls"
         const val KEY_MOCK_MODE = "mock_mode"

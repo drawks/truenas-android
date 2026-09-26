@@ -41,6 +41,7 @@ class ConnectionViewModel @Inject constructor(
     }
 
     fun onHostChanged(value: String) = updateProfile { copy(host = value) }
+    fun onUsernameChanged(value: String) = updateProfile { copy(username = value) }
     fun onPortChanged(value: String) {
         hasLocalEdits = true
         val sanitized = value.filter { it.isDigit() }

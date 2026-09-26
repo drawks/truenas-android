@@ -2,12 +2,22 @@ package com.drawks.truenasandroid.core.network
 
 import com.drawks.truenasandroid.core.model.InstanceInfo
 import com.google.common.truth.Truth.assertThat
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import org.junit.Test
 
 class JsonRpcClientUtilsTest {
+
+    @Test
+    fun jsonRpcRequest_usesTrueNasMsgEnvelope() {
+        val encoded = Json.encodeToString(JsonRpcRequest(id = "1", method = "system.info"))
+
+        assertThat(encoded).contains("\"msg\":\"method\"")
+        assertThat(encoded).doesNotContain("jsonrpc")
+    }
 
     @Test
     fun buildTrueNasSocketUrl_formatsHostnameAndPort() {
