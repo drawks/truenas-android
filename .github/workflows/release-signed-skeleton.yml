@@ -3,6 +3,9 @@ name: Release Signed APK (Skeleton)
 on:
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   signed-release:
     runs-on: ubuntu-latest

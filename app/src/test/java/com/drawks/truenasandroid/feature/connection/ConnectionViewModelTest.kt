@@ -60,6 +60,33 @@ class ConnectionViewModelTest {
             .isEqualTo(ConnectionStatus.Success(InstanceInfo("nas.local", "24.10", "READY")))
         assertThat(lastSaved.get()?.host).isEqualTo("nas.local")
     }
+
+    @Test
+    fun connect_defaultsInvalidPortTo443() = runTest {
+        val savedProfile = AtomicReference<ConnectionProfile?>(null)
+        val repoProfile = AtomicReference<ConnectionProfile?>(null)
+        val store = object : ConnectionProfileStoreFake() {
+            override suspend fun saveProfile(profile: ConnectionProfile) {
+                savedProfile.set(profile)
+            }
+        }
+        val repository = object : TrueNasRepository {
+            override fun connect(profile: ConnectionProfile): Flow<ConnectionStatus> = flow {
+                repoProfile.set(profile)
+                emit(ConnectionStatus.Success(InstanceInfo("nas.local", "24.10", "READY")))
+            }
+        }
+
+        val viewModel = ConnectionViewModel(store, repository)
+        viewModel.onHostChanged("nas.local")
+        viewModel.onPortChanged("abc")
+        viewModel.onApiTokenChanged("token")
+        viewModel.connect()
+        dispatcher.scheduler.advanceUntilIdle()
+
+        assertThat(savedProfile.get()?.port).isEqualTo(443)
+        assertThat(repoProfile.get()?.port).isEqualTo(443)
+    }
 }
 
 open class ConnectionProfileStoreFake : ConnectionProfileStore {

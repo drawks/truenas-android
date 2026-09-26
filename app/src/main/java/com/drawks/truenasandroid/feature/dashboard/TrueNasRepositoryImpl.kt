@@ -4,6 +4,7 @@ import com.drawks.truenasandroid.core.model.ConnectionProfile
 import com.drawks.truenasandroid.core.model.ConnectionStatus
 import com.drawks.truenasandroid.core.model.InstanceInfo
 import com.drawks.truenasandroid.core.network.JsonRpcClient
+import com.drawks.truenasandroid.core.network.JsonRpcException
 import com.drawks.truenasandroid.core.network.buildTrueNasSocketUrl
 import com.drawks.truenasandroid.core.network.parseInstanceInfo
 import javax.inject.Inject
@@ -38,8 +39,12 @@ class TrueNasRepositoryImpl @Inject constructor(
 
         val response = runCatching {
             jsonRpcClient.call(url, SYSTEM_INFO_PRIMARY_METHOD, profile.apiToken, listOf(JsonNull))
-        }.recoverCatching {
-            jsonRpcClient.call(url, SYSTEM_INFO_FALLBACK_METHOD, profile.apiToken)
+        }.recoverCatching { primaryFailure ->
+            if (primaryFailure is JsonRpcException && primaryFailure.code == METHOD_NOT_FOUND_CODE) {
+                jsonRpcClient.call(url, SYSTEM_INFO_FALLBACK_METHOD, profile.apiToken)
+            } else {
+                throw primaryFailure
+            }
         }.getOrElse { throwable ->
             emit(ConnectionStatus.Error(throwable.message ?: "Unknown connection error"))
             return@flow
@@ -58,5 +63,6 @@ class TrueNasRepositoryImpl @Inject constructor(
     private companion object {
         const val SYSTEM_INFO_PRIMARY_METHOD = "system.info"
         const val SYSTEM_INFO_FALLBACK_METHOD = "system.general.summary"
+        const val METHOD_NOT_FOUND_CODE = -32601
     }
 }
