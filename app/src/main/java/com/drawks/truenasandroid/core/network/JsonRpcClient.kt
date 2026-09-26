@@ -163,6 +163,8 @@ internal fun JsonRpcResponse.authFailureMessage(): String? {
         ?: responseType
     return nestedResponseType?.takeUnless { it == AUTH_SUCCESS_RESPONSE }?.let {
         "TrueNAS authentication failed: $it"
+    } ?: msg?.let {
+        "TrueNAS authentication failed: $it"
     }
 }
 

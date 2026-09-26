@@ -124,6 +124,9 @@ class JsonRpcClientUtilsTest {
             msg = "failed",
             responseType = "AUTH_ERR",
         )
+        val failedEnvelopeOnly = JsonRpcResponse(
+            msg = "failed",
+        )
 
         assertThat(success.isSuccessfulAuthResponse()).isTrue()
         assertThat(missingEnvelope.isSuccessfulAuthResponse()).isFalse()
@@ -135,5 +138,7 @@ class JsonRpcClientUtilsTest {
         assertThat(serverErrorWithResponseType.authFailureMessage()).isEqualTo("Detailed auth denied")
         assertThat(failedEnvelopeResponseType.authFailureMessage())
             .isEqualTo("TrueNAS authentication failed: AUTH_ERR")
+        assertThat(failedEnvelopeOnly.authFailureMessage())
+            .isEqualTo("TrueNAS authentication failed: failed")
     }
 }
