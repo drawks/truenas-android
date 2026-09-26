@@ -20,13 +20,15 @@ class EncryptedConnectionProfileStore @Inject constructor(
     @ApplicationContext context: Context,
 ) : ConnectionProfileStore {
 
-    private val sharedPreferences = EncryptedSharedPreferences.create(
-        context,
-        FILE_NAME,
-        MasterKey.Builder(context).setKeyScheme(MasterKey.KeyScheme.AES256_GCM).build(),
-        EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-        EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM,
-    )
+    private val sharedPreferences by lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
+        EncryptedSharedPreferences.create(
+            context,
+            FILE_NAME,
+            MasterKey.Builder(context).setKeyScheme(MasterKey.KeyScheme.AES256_GCM).build(),
+            EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+            EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM,
+        )
+    }
 
     override suspend fun loadProfile(): ConnectionProfile = withContext(Dispatchers.IO) {
         ConnectionProfile(
@@ -39,13 +41,14 @@ class EncryptedConnectionProfileStore @Inject constructor(
     }
 
     override suspend fun saveProfile(profile: ConnectionProfile) = withContext(Dispatchers.IO) {
-        sharedPreferences.edit()
+        val committed = sharedPreferences.edit()
             .putString(KEY_HOST, profile.host.trim())
             .putInt(KEY_PORT, profile.port)
             .putString(KEY_TOKEN, profile.apiToken.trim())
             .putBoolean(KEY_USE_TLS, profile.useTls)
             .putBoolean(KEY_MOCK_MODE, profile.mockMode)
-            .apply()
+            .commit()
+        check(committed) { "Failed to save connection profile" }
     }
 
     private companion object {

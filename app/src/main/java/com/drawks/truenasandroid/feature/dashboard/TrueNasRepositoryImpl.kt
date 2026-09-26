@@ -2,7 +2,6 @@ package com.drawks.truenasandroid.feature.dashboard
 
 import com.drawks.truenasandroid.core.model.ConnectionProfile
 import com.drawks.truenasandroid.core.model.ConnectionStatus
-import com.drawks.truenasandroid.core.model.InstanceInfo
 import com.drawks.truenasandroid.core.network.JsonRpcClient
 import com.drawks.truenasandroid.core.network.JsonRpcException
 import com.drawks.truenasandroid.core.network.buildTrueNasSocketUrl
@@ -11,7 +10,6 @@ import javax.inject.Inject
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
-import kotlinx.serialization.json.JsonNull
 
 class TrueNasRepositoryImpl @Inject constructor(
     private val jsonRpcClient: JsonRpcClient,
@@ -33,12 +31,15 @@ class TrueNasRepositoryImpl @Inject constructor(
             return@flow
         }
 
-        validate(profile)
+        runCatching { validate(profile) }.getOrElse { validationFailure ->
+            emit(ConnectionStatus.Error(validationFailure.message ?: "Invalid connection profile"))
+            return@flow
+        }
 
         val url = buildTrueNasSocketUrl(profile.host, profile.port, profile.useTls)
 
         val response = runCatching {
-            jsonRpcClient.call(url, SYSTEM_INFO_PRIMARY_METHOD, profile.apiToken, listOf(JsonNull))
+            jsonRpcClient.call(url, SYSTEM_INFO_PRIMARY_METHOD, profile.apiToken)
         }.recoverCatching { primaryFailure ->
             if (primaryFailure is JsonRpcException && primaryFailure.code == METHOD_NOT_FOUND_CODE) {
                 jsonRpcClient.call(url, SYSTEM_INFO_FALLBACK_METHOD, profile.apiToken)
@@ -50,8 +51,7 @@ class TrueNasRepositoryImpl @Inject constructor(
             return@flow
         }
 
-        val (hostname, version, state) = parseInstanceInfo(response)
-        emit(ConnectionStatus.Success(InstanceInfo(hostname, version, state)))
+        emit(ConnectionStatus.Success(parseInstanceInfo(response)))
     }
 
     private fun validate(profile: ConnectionProfile) {

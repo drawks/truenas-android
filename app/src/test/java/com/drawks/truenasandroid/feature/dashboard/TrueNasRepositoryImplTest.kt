@@ -67,6 +67,23 @@ class TrueNasRepositoryImplTest {
         ).inOrder()
     }
 
+    @Test
+    fun connect_mockModeSkipsNetworkAndSucceeds() = runTest {
+        val client = FakeJsonRpcClient()
+
+        val emissions = TrueNasRepositoryImpl(client)
+            .connect(validProfile().copy(mockMode = true))
+            .toList()
+
+        assertThat(client.calls).isEmpty()
+        assertThat(emissions.last())
+            .isEqualTo(
+                ConnectionStatus.Success(
+                    InstanceInfo("mock-truenas.local", "SCALE-MOCK-1.0", "READY")
+                )
+            )
+    }
+
     private fun validProfile() = ConnectionProfile(host = "nas.local", apiToken = "token")
 
     private fun jsonInfo(hostname: String, version: String, state: String) = JsonObject(

@@ -8,6 +8,7 @@ import com.drawks.truenasandroid.feature.dashboard.TrueNasRepository
 import com.google.common.truth.Truth.assertThat
 import java.util.concurrent.atomic.AtomicReference
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -86,6 +87,36 @@ class ConnectionViewModelTest {
 
         assertThat(savedProfile.get()?.port).isEqualTo(443)
         assertThat(repoProfile.get()?.port).isEqualTo(443)
+    }
+
+    @Test
+    fun connect_secondAttemptReplacesFirstInFlightRequest() = runTest {
+        val store = ConnectionProfileStoreFake()
+        val repository = object : TrueNasRepository {
+            override fun connect(profile: ConnectionProfile): Flow<ConnectionStatus> = flow {
+                emit(ConnectionStatus.Loading)
+                if (profile.host == "first") {
+                    delay(5_000)
+                    emit(ConnectionStatus.Success(InstanceInfo("first", "old", "READY")))
+                } else {
+                    emit(ConnectionStatus.Success(InstanceInfo("second", "new", "READY")))
+                }
+            }
+        }
+
+        val viewModel = ConnectionViewModel(store, repository)
+        viewModel.onApiTokenChanged("token")
+        viewModel.onHostChanged("first")
+        viewModel.connect()
+
+        dispatcher.scheduler.advanceTimeBy(100)
+
+        viewModel.onHostChanged("second")
+        viewModel.connect()
+        dispatcher.scheduler.advanceUntilIdle()
+
+        assertThat(viewModel.uiState.value.status)
+            .isEqualTo(ConnectionStatus.Success(InstanceInfo("second", "new", "READY")))
     }
 }
 

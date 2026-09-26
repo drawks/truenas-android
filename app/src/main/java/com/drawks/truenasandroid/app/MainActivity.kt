@@ -6,13 +6,16 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
@@ -23,7 +26,9 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
@@ -113,15 +118,24 @@ fun ConnectionScreen(
             ToggleRow(label = "Use TLS (recommended)", checked = uiState.profile.useTls, onCheckedChanged = onTlsChanged)
             ToggleRow(label = "Mock mode (no NAS required)", checked = uiState.profile.mockMode, onCheckedChanged = onMockChanged)
 
-            Button(onClick = onConnectClicked, modifier = Modifier.fillMaxWidth()) {
+            Button(
+                onClick = onConnectClicked,
+                enabled = uiState.status !is ConnectionStatus.Loading,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
                 Text("Connect")
             }
 
             when (val status = uiState.status) {
                 ConnectionStatus.Idle -> Text("Ready to connect")
-                ConnectionStatus.Loading -> CircularProgressIndicator()
+                ConnectionStatus.Loading -> {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        CircularProgressIndicator()
+                        Text("Connecting to TrueNAS…")
+                    }
+                }
                 is ConnectionStatus.Error -> Text(
-                    text = "Connection failed: ${status.message}",
+                    text = "Error: Connection failed. ${status.message}",
                     color = MaterialTheme.colorScheme.error,
                 )
                 is ConnectionStatus.Success -> DashboardContent(status.info)
@@ -132,9 +146,23 @@ fun ConnectionScreen(
 
 @Composable
 private fun ToggleRow(label: String, checked: Boolean, onCheckedChanged: (Boolean) -> Unit) {
-    Column {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .toggleable(
+                value = checked,
+                role = Role.Switch,
+                onValueChange = onCheckedChanged,
+            ),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween,
+    ) {
         Text(label)
-        Switch(checked = checked, onCheckedChange = onCheckedChanged)
+        Switch(
+            checked = checked,
+            onCheckedChange = null,
+            modifier = Modifier.size(width = 52.dp, height = 32.dp),
+        )
     }
 }
 
