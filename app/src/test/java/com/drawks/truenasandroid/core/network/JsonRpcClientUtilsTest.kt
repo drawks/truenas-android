@@ -96,6 +96,10 @@ class JsonRpcClientUtilsTest {
             msg = "result",
             result = JsonObject(mapOf("response_type" to JsonPrimitive("SUCCESS"))),
         )
+        val topLevelSuccess = JsonRpcResponse(
+            msg = "result",
+            responseType = "SUCCESS",
+        )
         val missingEnvelope = JsonRpcResponse(
             result = JsonObject(mapOf("response_type" to JsonPrimitive("SUCCESS"))),
         )
@@ -129,6 +133,7 @@ class JsonRpcClientUtilsTest {
         )
 
         assertThat(success.isSuccessfulAuthResponse()).isTrue()
+        assertThat(topLevelSuccess.isSuccessfulAuthResponse()).isTrue()
         assertThat(missingEnvelope.isSuccessfulAuthResponse()).isFalse()
         assertThat(missingResponseType.isSuccessfulAuthResponse()).isFalse()
         assertThat(authError.isSuccessfulAuthResponse()).isFalse()

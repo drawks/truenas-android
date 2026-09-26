@@ -152,8 +152,9 @@ class OkHttpJsonRpcClient @Inject constructor(
 internal fun JsonRpcResponse.isSuccessfulAuthResponse(): Boolean {
     if (msg != RESULT_MESSAGE) return false
 
-    val authResult = result as? JsonObject ?: return false
-    val responseType = (authResult["response_type"] as? JsonPrimitive)?.contentOrNull
+    val authResult = result as? JsonObject
+    val responseType = (authResult?.get("response_type") as? JsonPrimitive)?.contentOrNull
+        ?: responseType
     return responseType == AUTH_SUCCESS_RESPONSE
 }
 
