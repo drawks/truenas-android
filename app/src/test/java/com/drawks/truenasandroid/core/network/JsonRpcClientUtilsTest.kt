@@ -138,6 +138,7 @@ class JsonRpcClientUtilsTest {
 
         assertThat(success.isSuccessfulAuthResponse()).isTrue()
         assertThat(topLevelSuccess.isSuccessfulAuthResponse()).isTrue()
+        assertThat(success.authFailureMessage()).isNull()
         assertThat(missingEnvelope.isSuccessfulAuthResponse()).isFalse()
         assertThat(missingResponseType.isSuccessfulAuthResponse()).isFalse()
         assertThat(authError.isSuccessfulAuthResponse()).isFalse()

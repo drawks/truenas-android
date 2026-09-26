@@ -159,6 +159,7 @@ internal fun JsonRpcResponse.isSuccessfulAuthResponse(): Boolean {
 }
 
 internal fun JsonRpcResponse.authFailureMessage(): String? {
+    if (isSuccessfulAuthResponse()) return null
     error?.message?.takeUnless { it.isBlank() }?.let { return it }
     val nestedResponseType = ((result as? JsonObject)?.get("response_type") as? JsonPrimitive)?.contentOrNull
         ?: responseType
