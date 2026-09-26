@@ -147,30 +147,31 @@ class OkHttpJsonRpcClient @Inject constructor(
     private companion object {
         const val AUTH_METHOD = "auth.login_ex"
         const val AUTH_MECHANISM = "API_KEY_PLAIN"
-        const val AUTH_SUCCESS_RESPONSE = "SUCCESS"
-        const val RESULT_MESSAGE = "result"
-    }
-
-    private fun JsonRpcResponse.isSuccessfulAuthResponse(): Boolean {
-        if (msg != null && msg != RESULT_MESSAGE) return false
-
-        return when (val authResult = result) {
-            is JsonObject -> {
-                val responseType = (authResult["response_type"] as? JsonPrimitive)?.contentOrNull
-                responseType == null || responseType == AUTH_SUCCESS_RESPONSE
-            }
-            is JsonPrimitive -> authResult.booleanOrNull == true || authResult.contentOrNull == AUTH_SUCCESS_RESPONSE
-            else -> result != null
-        }
-    }
-
-    private fun JsonRpcResponse.authFailureMessage(): String? {
-        val responseType = ((result as? JsonObject)?.get("response_type") as? JsonPrimitive)?.contentOrNull
-        return responseType?.takeUnless { it == AUTH_SUCCESS_RESPONSE }?.let {
-            "TrueNAS authentication failed: $it"
-        }
     }
 }
+
+internal fun JsonRpcResponse.isSuccessfulAuthResponse(): Boolean {
+    if (msg != null && msg != RESULT_MESSAGE) return false
+
+    return when (val authResult = result) {
+        is JsonObject -> {
+            val responseType = (authResult["response_type"] as? JsonPrimitive)?.contentOrNull
+            responseType == AUTH_SUCCESS_RESPONSE
+        }
+        is JsonPrimitive -> authResult.booleanOrNull == true || authResult.contentOrNull == AUTH_SUCCESS_RESPONSE
+        else -> false
+    }
+}
+
+internal fun JsonRpcResponse.authFailureMessage(): String? {
+    val responseType = ((result as? JsonObject)?.get("response_type") as? JsonPrimitive)?.contentOrNull
+    return responseType?.takeUnless { it == AUTH_SUCCESS_RESPONSE }?.let {
+        "TrueNAS authentication failed: $it"
+    }
+}
+
+private const val AUTH_SUCCESS_RESPONSE = "SUCCESS"
+private const val RESULT_MESSAGE = "result"
 
 fun buildTrueNasSocketUrl(host: String, port: Int, useTls: Boolean): String {
     val scheme = if (useTls) "wss" else "ws"

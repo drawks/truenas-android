@@ -89,4 +89,35 @@ class JsonRpcClientUtilsTest {
         assertThat(fromMissingFields).isEqualTo(InstanceInfo("Unknown", "Unknown", "Unknown"))
         assertThat(fromArrayPayload).isEqualTo(InstanceInfo("Unknown", "Unknown", "Unknown"))
     }
+
+    @Test
+    fun jsonRpcResponse_authRequiresExplicitSuccess() {
+        val success = JsonRpcResponse(
+            msg = "result",
+            result = JsonObject(mapOf("response_type" to JsonPrimitive("SUCCESS"))),
+        )
+        val legacySuccess = JsonRpcResponse(
+            msg = "result",
+            result = JsonPrimitive(true),
+        )
+        val missingResponseType = JsonRpcResponse(
+            msg = "result",
+            result = JsonObject(mapOf("user_info" to JsonPrimitive("ignored"))),
+        )
+        val authError = JsonRpcResponse(
+            msg = "result",
+            result = JsonObject(mapOf("response_type" to JsonPrimitive("AUTH_ERR"))),
+        )
+        val wrongEnvelope = JsonRpcResponse(
+            msg = "failed",
+            result = JsonObject(mapOf("response_type" to JsonPrimitive("SUCCESS"))),
+        )
+
+        assertThat(success.isSuccessfulAuthResponse()).isTrue()
+        assertThat(legacySuccess.isSuccessfulAuthResponse()).isTrue()
+        assertThat(missingResponseType.isSuccessfulAuthResponse()).isFalse()
+        assertThat(authError.isSuccessfulAuthResponse()).isFalse()
+        assertThat(authError.authFailureMessage()).isEqualTo("TrueNAS authentication failed: AUTH_ERR")
+        assertThat(wrongEnvelope.isSuccessfulAuthResponse()).isFalse()
+    }
 }
