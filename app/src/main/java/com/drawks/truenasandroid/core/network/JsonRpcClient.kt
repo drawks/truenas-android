@@ -52,7 +52,7 @@ class OkHttpJsonRpcClient @Inject constructor(
         val requestId = UUID.randomUUID().toString()
         val authRequestId = UUID.randomUUID().toString()
         val authRequestBody = json.encodeToString(
-            JsonRpcRequest(
+            TrueNasApiRequest(
                 id = authRequestId,
                 method = AUTH_METHOD,
                 params = listOf(
@@ -71,7 +71,7 @@ class OkHttpJsonRpcClient @Inject constructor(
                 ),
             )
         )
-        val requestBody = json.encodeToString(JsonRpcRequest(id = requestId, method = method, params = params))
+        val requestBody = json.encodeToString(TrueNasApiRequest(id = requestId, method = method, params = params))
         val request = Request.Builder()
             .url(profileUrl)
             .build()

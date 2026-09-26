@@ -9,6 +9,14 @@ data class JsonRpcRequest(
     val id: String,
     val method: String,
     val params: List<JsonElement> = emptyList(),
+    val jsonrpc: String = "2.0",
+)
+
+@Serializable
+data class TrueNasApiRequest(
+    val id: String,
+    val method: String,
+    val params: List<JsonElement> = emptyList(),
     val msg: String = "method",
 )
 

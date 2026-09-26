@@ -12,8 +12,8 @@ import org.junit.Test
 class JsonRpcClientUtilsTest {
 
     @Test
-    fun jsonRpcRequest_usesTrueNasMsgEnvelope() {
-        val encoded = Json.encodeToString(JsonRpcRequest(id = "1", method = "system.info"))
+    fun trueNasApiRequest_usesMsgEnvelopeWithoutJsonRpcVersion() {
+        val encoded = Json.encodeToString(TrueNasApiRequest(id = "1", method = "system.info"))
 
         assertThat(encoded).contains("\"msg\":\"method\"")
         assertThat(encoded).doesNotContain("jsonrpc")
