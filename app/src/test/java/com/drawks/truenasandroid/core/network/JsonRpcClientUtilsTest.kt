@@ -115,6 +115,11 @@ class JsonRpcClientUtilsTest {
             msg = "failed",
             error = JsonRpcError(code = -32001, message = "Auth denied"),
         )
+        val serverErrorWithResponseType = JsonRpcResponse(
+            msg = "failed",
+            result = JsonObject(mapOf("response_type" to JsonPrimitive("AUTH_ERR"))),
+            error = JsonRpcError(code = -32001, message = "Detailed auth denied"),
+        )
         val failedEnvelopeResponseType = JsonRpcResponse(
             msg = "failed",
             responseType = "AUTH_ERR",
@@ -127,6 +132,7 @@ class JsonRpcClientUtilsTest {
         assertThat(authError.authFailureMessage()).isEqualTo("TrueNAS authentication failed: AUTH_ERR")
         assertThat(wrongEnvelope.isSuccessfulAuthResponse()).isFalse()
         assertThat(serverError.authFailureMessage()).isEqualTo("Auth denied")
+        assertThat(serverErrorWithResponseType.authFailureMessage()).isEqualTo("Detailed auth denied")
         assertThat(failedEnvelopeResponseType.authFailureMessage())
             .isEqualTo("TrueNAS authentication failed: AUTH_ERR")
     }
