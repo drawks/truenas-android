@@ -122,7 +122,7 @@ fun ConnectionScreen(
                 label = { Text("API key") },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Text,
+                    keyboardType = KeyboardType.Password,
                     autoCorrect = false,
                 ),
                 visualTransformation = PasswordVisualTransformation(),
